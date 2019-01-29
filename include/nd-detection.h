@@ -51,10 +51,13 @@ public:
     }
     virtual void *Entry(void);
 
+    // XXX: The following public methods are Not thread-safe!
+
     nd_flow_map *GetFlows(void) { return flows; }
 
-    // XXX: Not thread-safe!
     int GetCaptureStats(struct pcap_stat &stats);
+
+    void GetInterfaceRates(float &pps, float &bps);
 
 protected:
     bool internal;
@@ -85,6 +88,12 @@ protected:
     nd_device_addrs *device_addrs;
     nd_dns_cache *dns_cache;
     ns_msg ns_h;
+
+    // Last rate sample time
+    uint64_t ts_rs;
+    uint32_t rs_packets, rs_bytes;
+    deque<uint32_t> rate_packets;
+    deque<uint32_t> rate_bits;
 
     pcap_t *OpenCapture(void);
 

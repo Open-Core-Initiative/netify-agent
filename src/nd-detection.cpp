@@ -20,8 +20,8 @@
 
 #include <cerrno>
 #include <cstring>
-#include <deque>
 #include <iostream>
+#include <deque>
 #include <map>
 #include <queue>
 #include <sstream>
@@ -192,7 +192,8 @@ ndDetectionThread::ndDetectionThread(
     pcap(NULL), pcap_fd(-1), pcap_snaplen(ND_PCAP_SNAPLEN),
     pcap_datalink_type(0), pkt_header(NULL), pkt_data(NULL), ts_pkt_last(0),
     ts_last_idle_scan(0), ndpi(NULL), custom_proto_base(0), flows(flow_map),
-    stats(stats), device_addrs(device_addrs), dns_cache(dns_cache)
+    stats(stats), device_addrs(device_addrs), dns_cache(dns_cache),
+    ts_rs(0), rs_packets(0), rs_bytes(0)
 {
     memset(stats, 0, sizeof(nd_packet_stats));
 
@@ -204,6 +205,9 @@ ndDetectionThread::ndDetectionThread(
     }
 
     ndpi = nd_ndpi_init(tag, custom_proto_base);
+
+    rate_packets.assign(nd_config.update_interval, 0);
+    rate_bits.assign(nd_config.update_interval, 0);
 
     nd_debug_printf("%s: detection thread created, custom_proto_base: %u.\n",
         tag.c_str(), custom_proto_base);
@@ -278,7 +282,42 @@ void *ndDetectionThread::Entry(void)
             if (rc == -1)
                 throw ndDetectionThreadException(strerror(errno));
 
-            if (rc == 0) continue;
+            if (rc == 0 ||
+                ((double)ts_pkt_last - (double)ts_rs) / 1000.0f > 1.0f) {
+
+                rate_packets.push_front(rs_packets);
+                if (rate_packets.size() > nd_config.update_interval)
+                    rate_packets.pop_back();
+
+                rate_bits.push_front(rs_bytes * 8);
+                if (rate_bits.size() > nd_config.update_interval)
+                    rate_bits.pop_back();
+
+                rs_packets = rs_bytes = 0;
+                /*
+                float pps, bps;
+                GetInterfaceRates(pps, bps);
+                nd_debug_printf("%s: %.0f pps, %.02f kbps\n",
+                    tag.c_str(), pps, bps / 1000.0f);
+
+                if (thread_socket) {
+                    ndJson json;
+
+                    string json_string;
+                    json.ToString(json_string, false);
+                    json_string.append("\n");
+
+                    thread_socket->QueueWrite(json_string);
+
+                    json.Destroy();
+                }
+                */
+                if (rc == 0) {
+                    ts_rs = time(NULL) * 1000;
+                    continue;
+                }
+                else ts_rs = ts_pkt_last;
+            }
 
             if (! FD_ISSET(pcap_fd, &fds_read)) {
                 nd_debug_printf("%s: Read event but pcap descriptor not set!",
@@ -399,7 +438,7 @@ pcap_t *ndDetectionThread::OpenCapture(void)
 }
 
 // XXX: Not thread-safe!
-// XXX: Ensure the object is locked before calling.
+// XXX: Ensure the object is locked before calling from outside of detection thread.
 int ndDetectionThread::GetCaptureStats(struct pcap_stat &stats)
 {
     memset(&stats, 0, sizeof(struct pcap_stat));
@@ -407,6 +446,21 @@ int ndDetectionThread::GetCaptureStats(struct pcap_stat &stats)
     if (pcap_file.size() || pcap == NULL) return 1;
 
     return pcap_stats(pcap, &stats);
+}
+
+// XXX: Not thread-safe!
+// XXX: Ensure the object is locked before calling from outside of detection thread.
+void ndDetectionThread::GetInterfaceRates(float &pps, float &bps)
+{
+    deque<uint32_t>::const_iterator i;
+
+    for (pps = 0.0f, i = rate_packets.begin(); i != rate_packets.end(); i++)
+        pps += (float)(*i);
+    for (bps = 0.0f, i = rate_bits.begin(); i != rate_bits.end(); i++)
+        bps += (float)(*i);
+
+    pps /= nd_config.update_interval;
+    bps /= nd_config.update_interval;
 }
 
 void ndDetectionThread::ProcessPacket(void)
@@ -459,6 +513,8 @@ void ndDetectionThread::ProcessPacket(void)
     }
 
     ts_pkt_last = ts_pkt;
+    rs_packets++;
+    rs_bytes += pkt_header->len;
 
     stats->pkt.raw++;
     if (pkt_header->len > stats->pkt.maxlen)
