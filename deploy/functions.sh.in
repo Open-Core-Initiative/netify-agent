@@ -146,6 +146,40 @@ load_edgeos()
     echo "$(/usr/share/netifyd/netify_edgeos/options.py)"
 }
 
+# OPNsense: Dynamically add all configured LAN/WAN interfaces.
+load_opnsense()
+{
+    local conf="/conf/config.xml"
+    local xpath_ifaces="/opnsense/interfaces"
+
+    for role in lan wan; do
+        i=1; while true; do
+            xpath="$xpath_ifaces/$role[$i]"
+            xmllint --xpath "$xpath/enable" $conf >/dev/null 2>&1 || break
+            enabled=$(xmllint --xpath "boolean($xpath/enable)" $conf)
+
+            if [ "$enabled" == "true" ]; then
+                ifn=$(xmllint --xpath "$xpath/if/text()" $conf)
+                case "$role" in
+                    lan)
+                        options="$options -I $ifn"
+                        ;;
+                    wan)
+                        options="$options -E $ifn"
+                        ;;
+                    esac
+            fi
+
+            i=$(expr $i + 1)
+        done
+    done
+
+    options=$(echo "$options" |\
+        sed -e 's/^[[:space:]]*//g' -e 's/[[:space:]]*$$//g')
+
+    echo "$options"
+}
+
 # pfSense: Dynamically add all configured LAN/WAN interfaces.
 load_pfsense()
 {
@@ -244,6 +278,9 @@ auto_detect_options()
             openwrt)
                 options=$(load_openwrt)
             ;;
+            opnsense)
+                options=$(load_opnsense)
+            ;;
             pfsense)
                 options=$(load_pfsense)
             ;;
@@ -267,6 +304,9 @@ restart_netifyd()
         ;;
         freebsd)
             @sysconfdir@/rc.d/@PACKAGE_TARNAME@ restart
+        ;;
+        opnsense)
+            @sysconfdir@/rc.d/@PACKAGE_TARNAME@.sh restart
         ;;
         pfsense)
             @sysconfdir@/rc.d/@PACKAGE_TARNAME@.sh restart
