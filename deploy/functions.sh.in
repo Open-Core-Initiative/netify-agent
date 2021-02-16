@@ -85,6 +85,22 @@ load_clearos()
     echo "$options"
 }
 
+# Endian: Dynamically add all configured LAN/WAN interfaces.
+load_endian()
+{
+    local options=""
+
+    for ifn in $(/usr/local/bin/datasource -noheading ethernet | tr '[:upper:]' '[:lower:]' | grep br | awk '{if ($3!=0) print $1}'); do
+        options="$options -I $ifn"
+    done
+
+    for ifn in $(for u in $(/usr/local/bin/datasource -brief -noheading uplinks);do echo $(/usr/local/bin/datasource -brief -noheading uplinks.$u.settings.RED_DEV);done); do
+        options="$options -E $ifn"
+    done
+
+    echo "$options"
+}
+
 # NethServer: Dynamically add all configured LAN/WAN interfaces.
 load_nethserver()
 {
@@ -207,6 +223,9 @@ detect_os()
         if egrep -q '^Ubuntu' /etc/issue; then
             echo "ubuntu"
             return
+        elif egrep -q '^Endian' /etc/issue; then
+            echo "endian"
+            return
         fi
     fi
 
@@ -247,6 +266,9 @@ auto_detect_options()
         case "$(detect_os)" in
             clearos)
                 options=$(load_clearos)
+            ;;
+            endian)
+                options=$(load_endian)
             ;;
             nethserver)
                 options=$(load_nethserver)

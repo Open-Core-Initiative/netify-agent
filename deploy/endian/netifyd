@@ -1,0 +1,81 @@
+#!/bin/sh
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+RETVAL=0
+prog="netifyd"
+PIDFILE=/run/netifyd/$prog.pid
+ 
+# Source configuration
+if [ -f /etc/default/$prog ] ; then
+    . /etc/default/$prog
+fi
+ 
+start() {
+    # Load defaults.
+    if [ -f /usr/share/netifyd/functions.sh ]; then
+       source /usr/share/netifyd/functions.sh
+       NETIFYD_OPTS=$(auto_detect_options)
+       load_modules
+    fi
+
+    # Start daemons.
+    echo -n $"Starting $prog: "
+    start-stop-daemon --start --quiet -b -m --pidfile $PIDFILE --exec /usr/sbin/$prog -- $NETIFYD_OPTS
+    RETVAL=$?
+    echo
+    return $RETVAL
+}
+ 
+stop() {
+    # Stop daemons.
+    echo -n $"Shutting down $prog: "
+    start-stop-daemon --stop --quiet --pidfile $PIDFILE --exec /usr/sbin/$prog
+    RETVAL=$?
+    if [ -f $PIDFILE ] ; then
+        rm $PIDFILE
+    fi
+    echo
+    return $RETVAL
+}
+ 
+restart() {
+    stop
+    start
+}
+ 
+# See how we were called.
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart|reload)
+        stop
+        start
+        RETVAL=$?
+        ;;
+
+    condrestart)
+        status $prog &>/dev/null && restart || :
+        ;;
+
+    condstop)
+        status $prog &>/dev/null && stop || :
+        ;;
+
+    status)
+        status $prog
+        RETVAL=$?
+        ;;
+
+    *)
+        echo $"Usage: $0 {start|stop|restart|condrestart|condstop|status}"
+        exit 1
+esac
+
+exit $RETVAL
