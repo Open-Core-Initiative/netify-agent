@@ -78,12 +78,13 @@ void ndpi_global_init(void)
         set_ndpi_malloc(nd_mem_alloc);
         set_ndpi_free(nd_mem_free);
 
-        np = ndpi_init_detection_module();
+        ndpi_init_prefs prefs = ndpi_no_prefs;
+        np = ndpi_init_detection_module(prefs);
 
         if (np == NULL)
             throw ndThreadException("Detection module initialization failure");
 
-        ndpi_custom_proto_base = np->ndpi_num_supported_protocols;
+        ndpi_custom_proto_base = ndpi_get_num_supported_protocols(np);
 
     #ifdef NDPI_ENABLE_DEBUG_MESSAGES
         np->ndpi_log_level = NDPI_LOG_TRACE;
@@ -91,6 +92,7 @@ void ndpi_global_init(void)
         set_ndpi_debug_function(np, nd_ndpi_debug_printf);
     #endif
 
+#if 0
         if (np->host_automa.ac_automa == NULL)
             throw ndThreadException("Detection host_automa initialization failure");
 
@@ -106,12 +108,13 @@ void ndpi_global_init(void)
         }
 
         ndpi_init_string_based_protocols(np);
-
+#endif
         NDPI_PROTOCOL_BITMASK proto_all;
         NDPI_BITMASK_SET_ALL(proto_all);
 
         ndpi_set_protocol_detection_bitmask2(np, &proto_all);
-
+        ndpi_finalize_initialization(np);
+#if 0
         if (nd_config.path_sink_config != NULL &&
             stat(nd_config.path_sink_config, &path_sink_config_stat) == 0) {
             nd_dprintf("Loading custom protocols from%s: %s\n",
@@ -119,7 +122,7 @@ void ndpi_global_init(void)
                 nd_config.path_sink_config);
             ndpi_load_protocols_file(np, nd_config.path_sink_config);
         }
-
+#endif
         ndpi_parent = np;
 
     } catch (...) {
@@ -142,11 +145,11 @@ void ndpi_global_destroy(void)
                 throw ndThreadException("Unable to lock pthread_mutex (init)");
 
             ndpi_parent = NULL;
-
+#if 0
             pthread_mutex_destroy(ndpi_host_automa_lock);
             delete ndpi_host_automa_lock;
             ndpi_host_automa_lock = NULL;
-
+#endif
             ndpi_exit_detection_module(np);
 
         } catch (...) {
@@ -186,18 +189,20 @@ struct ndpi_detection_module_struct *nd_ndpi_init(const string &tag __attribute_
 {
     struct ndpi_detection_module_struct *ndpi = NULL;
 
-    ndpi = ndpi_init_detection_module();
+    ndpi_init_prefs prefs = ndpi_no_prefs;
+//    ndpi_no_prefs            = 0,
+//    ndpi_dont_load_tor_hosts = 1,
+//    ndpi_dont_init_libgcrypt = 2,
+//    ndpi_enable_ja3_plus     = 4
+    ndpi = ndpi_init_detection_module(prefs);
 
     if (ndpi == NULL)
         throw ndThreadException("Detection module initialization failure");
 
     // Set nDPI preferences
-    ndpi_set_detection_preferences(ndpi, ndpi_pref_http_dont_dissect_response, 0);
-    ndpi_set_detection_preferences(ndpi, ndpi_pref_dns_dont_dissect_response, 0);
     ndpi_set_detection_preferences(ndpi, ndpi_pref_direction_detect_disable, 0);
-    ndpi_set_detection_preferences(ndpi, ndpi_pref_disable_metadata_export, 0);
-    ndpi_set_detection_preferences(ndpi, ndpi_pref_enable_category_substring_match, 0);
-
+//    ndpi_set_detection_preferences(ndpi, ndpi_pref_enable_tls_block_dissection, 1);
+#if 0
     if (ndpi->host_automa.ac_automa != NULL)
         ndpi_free_automa(ndpi->host_automa.ac_automa);
 
@@ -207,7 +212,7 @@ struct ndpi_detection_module_struct *nd_ndpi_init(const string &tag __attribute_
     ndpi->host_automa.ac_automa = ndpi_parent->host_automa.ac_automa;
     ndpi->host_automa.lock = ndpi_parent->host_automa.lock;
     ndpi->protocols_ptree = ndpi_parent->protocols_ptree;
-
+#endif
     //ndpi_init_string_based_protocols(ndpi);
 
 #ifdef NDPI_ENABLE_DEBUG_MESSAGES
@@ -216,11 +221,15 @@ struct ndpi_detection_module_struct *nd_ndpi_init(const string &tag __attribute_
     set_ndpi_debug_function(ndpi, nd_ndpi_debug_printf);
 #endif
 
-    NDPI_PROTOCOL_BITMASK proto_all;
-    NDPI_BITMASK_SET_ALL(proto_all);
-
-    ndpi_set_protocol_detection_bitmask2(ndpi, &proto_all);
-
+    struct stat path_sink_config_stat;
+    if (nd_config.path_sink_config != NULL &&
+        stat(nd_config.path_sink_config, &path_sink_config_stat) == 0) {
+        nd_dprintf("Loading custom protocols from%s: %s\n",
+            ND_OVERRIDE_SINK_CONFIG ? " override" : "",
+            nd_config.path_sink_config);
+        ndpi_load_protocols_file(ndpi, nd_config.path_sink_config);
+    }
+#if 0
     for (int i = 0;
         i < NDPI_MAX_SUPPORTED_PROTOCOLS + NDPI_MAX_NUM_CUSTOM_PROTOCOLS;
         i++) {
@@ -246,17 +255,24 @@ struct ndpi_detection_module_struct *nd_ndpi_init(const string &tag __attribute_
 
     ndpi->ndpi_num_supported_protocols = ndpi_parent->ndpi_num_supported_protocols;
     ndpi->ndpi_num_custom_protocols = ndpi_parent->ndpi_num_custom_protocols;
+#endif
+    NDPI_PROTOCOL_BITMASK proto_all;
+    NDPI_BITMASK_SET_ALL(proto_all);
 
+    ndpi_set_protocol_detection_bitmask2(ndpi, &proto_all);
+
+    ndpi_finalize_initialization(ndpi);
     return ndpi;
 }
 
 void nd_ndpi_free(struct ndpi_detection_module_struct *ndpi)
 {
+#if 0
     ndpi->host_automa.ac_automa = NULL;
     ndpi->protocols_ptree = NULL;
     ndpi->udp_root_node = NULL;
     ndpi->tcp_root_node = NULL;
-
+#endif
     ndpi_exit_detection_module(ndpi);
 }
 

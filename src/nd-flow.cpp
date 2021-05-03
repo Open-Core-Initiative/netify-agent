@@ -313,12 +313,10 @@ uint16_t ndFlow::master_protocol(void)
     case NDPI_PROTOCOL_MAIL_IMAPS:
     case NDPI_PROTOCOL_MAIL_POPS:
     case NDPI_PROTOCOL_MAIL_SMTPS:
-    case NDPI_PROTOCOL_OSCAR:
-    case NDPI_PROTOCOL_SSL:
-    case NDPI_PROTOCOL_SSL_NO_CERT:
+    case NDPI_PROTOCOL_TLS:
     case NDPI_PROTOCOL_TOR:
-    case NDPI_PROTOCOL_UNENCRYPTED_JABBER:
-        return NDPI_PROTOCOL_SSL;
+    case NDPI_PROTOCOL_JABBER:
+        return NDPI_PROTOCOL_TLS;
     case NDPI_PROTOCOL_FACEBOOK:
     case NDPI_PROTOCOL_HTTP:
     case NDPI_PROTOCOL_HTTP_CONNECT:
@@ -391,7 +389,7 @@ bool ndFlow::has_ssh_server_agent(void)
 bool ndFlow::has_ssl_client_sni(void)
 {
     return (
-        master_protocol() == NDPI_PROTOCOL_SSL &&
+        master_protocol() == NDPI_PROTOCOL_TLS &&
         ssl.client_sni[0] != '\0'
     );
 }
@@ -399,7 +397,7 @@ bool ndFlow::has_ssl_client_sni(void)
 bool ndFlow::has_ssl_server_cn(void)
 {
     return (
-        master_protocol() == NDPI_PROTOCOL_SSL &&
+        master_protocol() == NDPI_PROTOCOL_TLS &&
         ssl.server_cn[0] != '\0'
     );
 }
@@ -407,7 +405,7 @@ bool ndFlow::has_ssl_server_cn(void)
 bool ndFlow::has_ssl_server_organization(void)
 {
     return (
-        master_protocol() == NDPI_PROTOCOL_SSL &&
+        master_protocol() == NDPI_PROTOCOL_TLS &&
         ssl.server_organization[0] != '\0'
     );
 }
@@ -415,7 +413,7 @@ bool ndFlow::has_ssl_server_organization(void)
 bool ndFlow::has_ssl_client_ja3(void)
 {
     return (
-        master_protocol() == NDPI_PROTOCOL_SSL &&
+        master_protocol() == NDPI_PROTOCOL_TLS &&
         ssl.client_ja3[0] != '\0'
     );
 }
@@ -423,7 +421,7 @@ bool ndFlow::has_ssl_client_ja3(void)
 bool ndFlow::has_ssl_server_ja3(void)
 {
     return (
-        master_protocol() == NDPI_PROTOCOL_SSL &&
+        master_protocol() == NDPI_PROTOCOL_TLS &&
         ssl.server_ja3[0] != '\0'
     );
 }
@@ -514,7 +512,7 @@ void ndFlow::print(void)
     );
 
     if (ND_DEBUG &&
-        detected_protocol.master_protocol == NDPI_PROTOCOL_SSL &&
+        detected_protocol.master_protocol == NDPI_PROTOCOL_TLS &&
         flags.detection_guessed == false && ssl.version == 0x0000) {
         nd_dprintf("%s: SSL with no SSL/TLS verison.\n", iface->second.c_str());
     }

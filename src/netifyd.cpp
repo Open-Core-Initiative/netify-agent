@@ -1183,7 +1183,7 @@ void nd_json_protocols(string &json_string)
     j["type"] = "protocols";
 
     struct ndpi_detection_module_struct *ndpi = ndpi_get_parent();
-
+#if 0
     for (unsigned i = 0; i < (unsigned)ndpi->ndpi_num_supported_protocols; i++) {
         json jo;
 
@@ -1192,7 +1192,7 @@ void nd_json_protocols(string &json_string)
 
         ja.push_back(jo);
     }
-
+#endif
     j["protocols"] = ja;
 
     nd_json_to_string(j, json_string);
@@ -1977,10 +1977,10 @@ static void nd_dump_protocols(void)
 
     ndpi = nd_ndpi_init("netifyd");
     custom_proto_base = ndpi_get_custom_proto_base();
-
+#if 0
     for (unsigned i = 0; i < (unsigned)ndpi->ndpi_num_supported_protocols; i++)
         printf("%4d: %s\n", i, ndpi->proto_defaults[i].proto_name);
-
+#endif
     ndpi_free(ndpi);
     ndpi_global_destroy();
 }

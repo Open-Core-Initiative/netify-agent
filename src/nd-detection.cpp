@@ -360,14 +360,16 @@ void ndDetectionThread::ProcessPacket(ndDetectionQueueEntry *entry)
 
             entry->flow->flags.detection_guessed = true;
 
-            entry->flow->detected_protocol.master_protocol =
-                ndpi_guess_undetected_protocol(
+            ndpi_protocol p = ndpi_guess_undetected_protocol(
                     ndpi,
                     NULL,
                     entry->flow->ip_protocol,
+                    0,
                     ntohs(entry->flow->lower_port),
+                    0,
                     ntohs(entry->flow->upper_port)
             );
+            entry->flow->detected_protocol.master_protocol = p.master_protocol;
         }
         else if (entry->flow->detected_protocol.master_protocol == NDPI_PROTOCOL_SSDP) {
             if (entry->flow->ndpi_flow->packet.packet_lines_parsed_complete) {
@@ -451,29 +453,29 @@ void ndDetectionThread::ProcessPacket(ndDetectionQueueEntry *entry)
         // Determine application based on master protocol metadata
         switch (entry->flow->detected_protocol.master_protocol) {
         case NDPI_PROTOCOL_HTTPS:
-        case NDPI_PROTOCOL_SSL:
+        case NDPI_PROTOCOL_TLS:
         case NDPI_PROTOCOL_MAIL_IMAPS:
         case NDPI_PROTOCOL_MAIL_SMTPS:
         case NDPI_PROTOCOL_MAIL_POPS:
-        case NDPI_PROTOCOL_SSL_NO_CERT:
-        case NDPI_PROTOCOL_OSCAR:
-            if (entry->flow->ndpi_flow->protos.stun_ssl.ssl.client_certificate[0] != '\0') {
-                entry->flow->detected_protocol.app_protocol = (uint16_t)ndpi_match_host_app_proto(
+            if (entry->flow->ndpi_flow->protos.tls_quic_stun.tls_quic.client_requested_server_name[0] != '\0') {
+                entry->flow->detected_protocol.app_protocol = (uint16_t)ndpi_match_hostname_protocol(
                     ndpi,
                     entry->flow->ndpi_flow,
-                    (char *)entry->flow->ndpi_flow->protos.stun_ssl.ssl.client_certificate,
-                    strlen((const char*)entry->flow->ndpi_flow->protos.stun_ssl.ssl.client_certificate),
-                    &npmr);
+                    entry->flow->detected_protocol.master_protocol,
+                    (char *)entry->flow->ndpi_flow->protos.tls_quic_stun.tls_quic.client_requested_server_name,
+                    strlen((const char*)entry->flow->ndpi_flow->protos.tls_quic_stun.tls_quic.client_requested_server_name));
             }
+#if 0
             if (entry->flow->detected_protocol.app_protocol == NDPI_PROTOCOL_UNKNOWN &&
-                entry->flow->ndpi_flow->protos.stun_ssl.ssl.server_certificate[0] != '\0') {
+                entry->flow->ndpi_flow->protos.tls_quic_stun.tls_quic.server_certificate[0] != '\0') {
                 entry->flow->detected_protocol.app_protocol = (uint16_t)ndpi_match_host_app_proto(
                     ndpi,
                     entry->flow->ndpi_flow,
-                    (char *)entry->flow->ndpi_flow->protos.stun_ssl.ssl.server_certificate,
-                    strlen((const char*)entry->flow->ndpi_flow->protos.stun_ssl.ssl.server_certificate),
+                    (char *)entry->flow->ndpi_flow->protos.tls_quic_stun.tls_quic.server_certificate,
+                    strlen((const char*)entry->flow->ndpi_flow->protos.tls_quic_stun.tls_quic.server_certificate),
                     &npmr);
             }
+#endif
             break;
 
         case NDPI_PROTOCOL_SPOTIFY:
@@ -484,104 +486,81 @@ void ndDetectionThread::ProcessPacket(ndDetectionQueueEntry *entry)
         case NDPI_PROTOCOL_SKYPE_CALL:
             entry->flow->detected_protocol.app_protocol = ndpi_get_protocol_id(ndpi, "netify.skype");
             break;
-
-        case NDPI_PROTOCOL_MDNS:
-            if (entry->flow->ndpi_flow->protos.mdns.answer[0] != '\0') {
-                entry->flow->detected_protocol.app_protocol = (uint16_t)ndpi_match_host_app_proto(
-                    ndpi, entry->flow->ndpi_flow,
-                    (char *)entry->flow->ndpi_flow->protos.mdns.answer,
-                    strlen((const char*)entry->flow->ndpi_flow->protos.mdns.answer),
-                    &npmr
-                );
-            }
-            break;
         }
 
         // Determine application by host_server_name if still unknown.
         if (entry->flow->detected_protocol.app_protocol == NDPI_PROTOCOL_UNKNOWN) {
             if (entry->flow->host_server_name[0] != '\0') {
-                entry->flow->detected_protocol.app_protocol = ndpi_match_host_app_proto(
+                entry->flow->detected_protocol.app_protocol = (uint16_t)ndpi_match_hostname_protocol(
                     ndpi,
                     entry->flow->ndpi_flow,
+                    entry->flow->detected_protocol.master_protocol,
                     (char *)entry->flow->host_server_name,
-                    strlen((const char *)entry->flow->host_server_name),
-                    &npmr
+                    strlen((const char *)entry->flow->host_server_name)
                 );
             }
         }
 
         if (entry->flow->detected_protocol.app_protocol == NDPI_PROTOCOL_UNKNOWN) {
-            entry->flow->detected_protocol.app_protocol = ndpi_match_host_proto_id(ndpi, entry->flow->ndpi_flow);
+            entry->flow->detected_protocol.app_protocol = ndpi_guess_host_protocol_id(ndpi, entry->flow->ndpi_flow);
         }
 
         if (entry->flow->detected_protocol.master_protocol == NDPI_PROTOCOL_STUN) {
             if (entry->flow->detected_protocol.app_protocol == NDPI_PROTOCOL_FACEBOOK)
                 entry->flow->detected_protocol.app_protocol = NDPI_PROTOCOL_MESSENGER;
             else if (entry->flow->detected_protocol.app_protocol == NDPI_PROTOCOL_GOOGLE)
-                entry->flow->detected_protocol.app_protocol = NDPI_PROTOCOL_HANGOUT;
+                entry->flow->detected_protocol.app_protocol = NDPI_PROTOCOL_HANGOUT_DUO;
         }
 
         // Additional protocol-specific processing...
         ndpi_proto = entry->flow->master_protocol();
 
         switch (ndpi_proto) {
-
-        case NDPI_PROTOCOL_MDNS:
-            for (size_t i = 0;
-                i < strlen((const char *)entry->flow->ndpi_flow->protos.mdns.answer); i++) {
-                if (! isprint(entry->flow->ndpi_flow->protos.mdns.answer[i])) {
-                    // XXX: Sanitize mdns.answer of non-printable characters.
-                    entry->flow->ndpi_flow->protos.mdns.answer[i] = '_';
-                }
-            }
-
-            snprintf(
-                entry->flow->mdns.answer, ND_FLOW_MDNS_ANSLEN,
-                "%s", entry->flow->ndpi_flow->protos.mdns.answer
-            );
-            break;
-
-        case NDPI_PROTOCOL_SSL:
+        case NDPI_PROTOCOL_TLS:
             entry->flow->ssl.version =
-                (entry->flow->ndpi_flow->protos.stun_ssl.ssl.version) ?
-                entry->flow->ndpi_flow->protos.stun_ssl.ssl.version :
-                entry->flow->ndpi_flow->protos.stun_ssl.ssl.ssl_version;
+                entry->flow->ndpi_flow->protos.tls_quic_stun.tls_quic.ssl_version;
             entry->flow->ssl.cipher_suite =
-                entry->flow->ndpi_flow->protos.stun_ssl.ssl.server_cipher;
+                entry->flow->ndpi_flow->protos.tls_quic_stun.tls_quic.server_cipher;
 
             snprintf(entry->flow->ssl.client_sni, ND_FLOW_TLS_CNLEN,
-                "%s", entry->flow->ndpi_flow->protos.stun_ssl.ssl.client_certificate);
+                "%s", entry->flow->ndpi_flow->protos.tls_quic_stun.tls_quic.client_requested_server_name);
+#if 0
             snprintf(entry->flow->ssl.server_cn, ND_FLOW_TLS_CNLEN,
-                "%s", entry->flow->ndpi_flow->protos.stun_ssl.ssl.server_certificate);
+                "%s", entry->flow->ndpi_flow->protos.tls_quic_stun.tls_quic.server_certificate);
+#endif
+#if 0
             snprintf(entry->flow->ssl.server_organization, ND_FLOW_TLS_ORGLEN,
-                "%s", entry->flow->ndpi_flow->protos.stun_ssl.ssl.server_organization);
+                "%s", entry->flow->ndpi_flow->protos.tls_quic_stun.tls_quic.server_organization);
+#endif
             snprintf(entry->flow->ssl.client_ja3, ND_FLOW_TLS_JA3LEN,
-                "%s", entry->flow->ndpi_flow->protos.stun_ssl.ssl.ja3_client);
+                "%s", entry->flow->ndpi_flow->protos.tls_quic_stun.tls_quic.ja3_client);
             snprintf(entry->flow->ssl.server_ja3, ND_FLOW_TLS_JA3LEN,
-                "%s", entry->flow->ndpi_flow->protos.stun_ssl.ssl.ja3_server);
+                "%s", entry->flow->ndpi_flow->protos.tls_quic_stun.tls_quic.ja3_server);
 
-            if (entry->flow->ndpi_flow->l4.tcp.tls_fingerprint_len) {
+//            if (entry->flow->ndpi_flow->l4.tcp.tls_fingerprint_len) {
                 memcpy(entry->flow->ssl.cert_fingerprint,
-                    entry->flow->ndpi_flow->l4.tcp.tls_sha1_certificate_fingerprint,
+                    entry->flow->ndpi_flow->protos.tls_quic_stun.tls_quic.sha1_certificate_fingerprint,
                     ND_FLOW_TLS_HASH_LEN);
                 entry->flow->ssl.cert_fingerprint_found = true;
-            }
+//            }
 
             break;
         case NDPI_PROTOCOL_HTTP:
-            for (size_t i = 0;
-                i < strlen((const char *)entry->flow->ndpi_flow->protos.http.user_agent); i++) {
-                if (! isprint(entry->flow->ndpi_flow->protos.http.user_agent[i])) {
-                    // XXX: Sanitize user_agent of non-printable characters.
-                    entry->flow->ndpi_flow->protos.http.user_agent[i] = '\0';
-                    break;
+            if (entry->flow->ndpi_flow->http.user_agent != NULL) {
+                for (size_t i = 0;
+                    i < strlen((const char *)entry->flow->ndpi_flow->http.user_agent); i++) {
+                    if (! isprint(entry->flow->ndpi_flow->http.user_agent[i])) {
+                        // XXX: Sanitize user_agent of non-printable characters.
+                        entry->flow->ndpi_flow->http.user_agent[i] = '\0';
+                        break;
+                    }
                 }
-            }
 
-            snprintf(
-                entry->flow->http.user_agent, ND_FLOW_UA_LEN,
-                "%s", entry->flow->ndpi_flow->protos.http.user_agent
-            );
+                snprintf(
+                    entry->flow->http.user_agent, ND_FLOW_UA_LEN,
+                    "%s", entry->flow->ndpi_flow->http.user_agent
+                );
+            }
 
             if (entry->flow->ndpi_flow->http.url != NULL) {
                 snprintf(
@@ -608,14 +587,14 @@ void ndDetectionThread::ProcessPacket(ndDetectionQueueEntry *entry)
                 "%s", entry->flow->ndpi_flow->protos.ssh.server_signature);
             break;
         case NDPI_PROTOCOL_BITTORRENT:
-            if (entry->flow->ndpi_flow->protos.bittorrent.hash_valid) {
+//            if (entry->flow->ndpi_flow->protos.bittorrent.hash_valid) {
                 entry->flow->bt.info_hash_valid = true;
                 memcpy(
                     entry->flow->bt.info_hash,
                     entry->flow->ndpi_flow->protos.bittorrent.hash,
                     ND_FLOW_BTIHASH_LEN
                 );
-            }
+//            }
             break;
         }
 

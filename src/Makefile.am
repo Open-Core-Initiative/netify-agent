@@ -13,8 +13,7 @@ AM_CPPFLAGS = $(CPPFLAGS) -D_GNU_SOURCE -I $(top_srcdir)/include \
 	-D'ND_DATADIR="$(datadir)/$(PACKAGE_TARNAME)"' \
 	-D'ND_PERSISTENT_STATEDIR="$(persistentstatedir)"' \
 	-D'ND_PID_FILE_NAME="$(volatilestatedir)/$(PACKAGE_TARNAME).pid"' \
-	-D'ND_VOLATILE_STATEDIR="$(volatilestatedir)"' \
-	-D NDPI_LIB_COMPILATION=1
+	-D'ND_VOLATILE_STATEDIR="$(volatilestatedir)"'
 
 if USE_CONNTRACK
 AM_CPPFLAGS += $(LIBNETFILTER_CONNTRACK_CFLAGS) $(LIBMNL_CFLAGS)
@@ -25,7 +24,8 @@ libnetifyd_la_SOURCES = nd-base64.cpp nd-capture.cpp nd-detection.cpp nd-dhc.cpp
 	nd-fhc.cpp nd-flow.cpp nd-json.cpp nd-ndpi.cpp nd-sha1.c nd-sink.cpp nd-socket.cpp \
 	nd-thread.cpp nd-util.cpp
 
-libnetifyd_la_LIBADD = $(top_srcdir)/libs/ndpi/src/lib/libndpi.la
+#libnetifyd_la_LIBADD = $(top_srcdir)/libs/ndpi/src/lib/libndpi.la
+libnetifyd_la_LIBADD = $(top_srcdir)/libs/ndpi/src/lib/libndpi.a
 
 if USE_INOTIFY
 libnetifyd_la_SOURCES += nd-inotify.cpp
