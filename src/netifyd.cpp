@@ -3021,6 +3021,7 @@ int main(int argc, char *argv[])
     sigaddset(&sigset, SIGHUP);
     sigaddset(&sigset, SIGINT);
     sigaddset(&sigset, SIGIO);
+    sigaddset(&sigset, SIGPWR);
     sigaddset(&sigset, SIGTERM);
     sigaddset(&sigset, SIGUSR1);
     sigaddset(&sigset, SIGUSR2);
@@ -3195,7 +3196,7 @@ int main(int argc, char *argv[])
             nd_dprintf("Caught signal: [%d] %s\n", sig, strsignal(sig));
         }
 
-        if (sig == SIGINT || sig == SIGTERM) {
+        if (sig == SIGINT || sig == SIGTERM || sig == SIGPWR) {
             if (! nd_terminate)
                 nd_printf("Shutdown requested, waiting for threads to exit...\n");
             else {
