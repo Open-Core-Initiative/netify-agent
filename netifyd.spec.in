@@ -40,7 +40,6 @@ BuildRequires: autoconf >= 2.63
 BuildRequires: automake
 BuildRequires: bc
 BuildRequires: libcurl-devel
-BuildRequires: gperftools-devel
 BuildRequires: libmnl-devel
 BuildRequires: libnetfilter_conntrack-devel
 BuildRequires: libpcap-devel
@@ -108,7 +107,7 @@ export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$(pwd)/libs/gperftools
 %endif
 
 ./autogen.sh
-%{configure} %{?_with_conntrack} %{?_with_inotify} %{?_with_netlink}
+%{configure} --disable-libtcmalloc %{?_with_conntrack} %{?_with_inotify} %{?_with_netlink}
 
 # Build
 %build
