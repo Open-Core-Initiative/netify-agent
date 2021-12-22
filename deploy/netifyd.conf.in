@@ -11,3 +11,6 @@ enable_sink = no
 
 [socket]
 listen_path[0] = @volatilestatedir@/@PACKAGE_TARNAME@.sock
+
+[plugin_detections]
+np-ct-label = libnetify-plugin-ct-label.so
