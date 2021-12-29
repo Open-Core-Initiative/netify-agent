@@ -1503,20 +1503,15 @@ static void nd_json_process_flows(
         total++;
 
         uint32_t last_seen = i->second->ts_last_seen / 1000;
-        uint32_t ttl = (
-            i->second->ip_protocol != IPPROTO_TCP
-        ) ? nd_config.ttl_idle_flow : nd_config.ttl_idle_tcp_flow;
-/*
-        uint32_t ttl = (
-            i->second->ip_protocol != IPPROTO_TCP || i->second->flags.tcp_fin.load()
-        ) ? nd_config.ttl_idle_flow : nd_config.ttl_idle_tcp_flow;
-*/
+        uint32_t ttl = (i->second->ip_protocol != IPPROTO_TCP) ?
+            nd_config.ttl_idle_flow : nd_config.ttl_idle_tcp_flow;
+
 //        nd_dprintf("%s: Purge flow?  %lus old, ttl: %lu (%lu <? %lu)\n",
 //            i->second->iface->second.c_str(),
 //            now - last_seen, ttl, last_seen + ttl, now);
 
-        if ((i->second->ip_protocol == IPPROTO_TCP && i->second->flags.tcp_fin.load()) ||
-            last_seen + ttl < now) {
+        if (last_seen + ttl < now ||
+            (i->second->ip_protocol == IPPROTO_TCP && i->second->flags.tcp_fin.load())) {
 
 //            nd_dprintf("%s: Purge flow, %lus old, ttl: %lu.\n",
 //                i->second->iface->second.c_str(), now - last_seen, ttl);
