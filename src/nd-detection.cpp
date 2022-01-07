@@ -513,9 +513,7 @@ void ndDetectionThread::ProcessPacket(ndDetectionQueueEntry *entry)
         }
 
         if (entry->flow->detected_protocol.master_protocol == NDPI_PROTOCOL_STUN) {
-            if (entry->flow->detected_protocol.app_protocol == NDPI_PROTOCOL_FACEBOOK)
-                entry->flow->detected_protocol.app_protocol = NDPI_PROTOCOL_MESSENGER;
-            else if (entry->flow->detected_protocol.app_protocol == NDPI_PROTOCOL_GOOGLE)
+            if (entry->flow->detected_protocol.app_protocol == NDPI_PROTOCOL_GOOGLE)
                 entry->flow->detected_protocol.app_protocol = NDPI_PROTOCOL_HANGOUT;
         }
 
