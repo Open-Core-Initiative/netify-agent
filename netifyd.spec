@@ -28,7 +28,7 @@
 Name: netifyd
 Summary: Netify Agent
 Version: 3.09
-Release: 6%{dist}
+Release: 7%{dist}
 Vendor: eGloo Incorporated
 URL: http://www.netify.ai/
 License: GPLv3
