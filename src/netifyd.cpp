@@ -2065,11 +2065,11 @@ static void nd_dump_stats(void)
         j_status["type"] = "agent_status";
 
         nd_json_to_string(j_status, json_string);
+        json_string.append("\n");
 
         if (thread_socket)
             thread_socket->QueueWrite(json_string);
 
-        json_string.append("\n");
         nd_json_save_to_file(json_string, ND_JSON_FILE_STATUS);
     }
     catch (runtime_error &e) {
