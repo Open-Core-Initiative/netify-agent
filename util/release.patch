@@ -3,8 +3,8 @@ index 479b22a..6d4b8ff 100644
 --- a/deploy/debian/debian.changelog.in
 +++ b/deploy/debian/debian.changelog.in
 @@ -1,4 +1,4 @@
--@PACKAGE_TARNAME@ (@PACKAGE_VERSION@-6) stable; urgency=low
-+@PACKAGE_TARNAME@ (@PACKAGE_VERSION@-7) stable; urgency=low
+-@PACKAGE_TARNAME@ (@PACKAGE_VERSION@-7) stable; urgency=low
++@PACKAGE_TARNAME@ (@PACKAGE_VERSION@-10) stable; urgency=low
  
    * Initial Release
  
@@ -15,16 +15,16 @@ index 2cc0924..41a10b6 100644
 @@ -1,10 +1,10 @@
  Format: 1.0
  Source: @PACKAGE_TARNAME@
--Version: @PACKAGE_VERSION@-6
-+Version: @PACKAGE_VERSION@-7
+-Version: @PACKAGE_VERSION@-7
++Version: @PACKAGE_VERSION@-10
  Binary: @PACKAGE_TARNAME@
  Maintainer: Darryl Sokoloski <darryl@egloo.ca>
  Architecture: any
  Build-Depends: debhelper (>= 4.1.16), dh-systemd (>= 1.5), systemd, autoconf, automake, bc, build-essential, libcurl4-openssl-dev, libmnl-dev, libncurses5-dev, libnetfilter-conntrack-dev, libpcap-dev, libtool, zlib1g-dev, libgoogle-perftools-dev
  Files: 
   d57283ebb8157ae919762c58419353c8 133282 @PACKAGE_TARNAME@_@PACKAGE_VERSION@.orig.tar.gz
-- 2fecf324a32123b08cefc0f047bca5ee 63176 @PACKAGE_TARNAME@_@PACKAGE_VERSION@-6.diff.tar.gz
-+ 2fecf324a32123b08cefc0f047bca5ee 63176 @PACKAGE_TARNAME@_@PACKAGE_VERSION@-7.diff.tar.gz
+- 2fecf324a32123b08cefc0f047bca5ee 63176 @PACKAGE_TARNAME@_@PACKAGE_VERSION@-7.diff.tar.gz
++ 2fecf324a32123b08cefc0f047bca5ee 63176 @PACKAGE_TARNAME@_@PACKAGE_VERSION@-10.diff.tar.gz
 diff --git a/netifyd.spec b/netifyd.spec
 index 6b1c808..52d420d 100644
 --- a/netifyd.spec
@@ -33,8 +33,8 @@ index 6b1c808..52d420d 100644
  Name: netifyd
  Summary: Netify Agent
  Version: 3.09
--Release: 6%{dist}
-+Release: 7%{dist}
+-Release: 7%{dist}
++Release: 10%{dist}
  Vendor: eGloo Incorporated
  URL: http://www.netify.ai/
  License: GPLv3
@@ -46,8 +46,8 @@ index 3a94977..7977eb9 100644
  Name: @PACKAGE_TARNAME@
  Summary: @PACKAGE_NAME@
  Version: @PACKAGE_VERSION@
--Release: 6%{dist}
-+Release: 7%{dist}
+-Release: 7%{dist}
++Release: 10%{dist}
  Vendor: eGloo Incorporated
  URL: @PACKAGE_URL@
  License: GPLv3

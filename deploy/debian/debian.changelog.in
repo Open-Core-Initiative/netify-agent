@@ -1,4 +1,4 @@
-@PACKAGE_TARNAME@ (@PACKAGE_VERSION@-7) stable; urgency=low
+@PACKAGE_TARNAME@ (@PACKAGE_VERSION@-10) stable; urgency=low
 
   * Initial Release
 
