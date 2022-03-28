@@ -1272,9 +1272,7 @@ void ndDetectionThread::ProcessPacket(void)
         }
 
         if (nf->detected_protocol.master_protocol == NDPI_PROTOCOL_STUN) {
-            if (nf->detected_protocol.app_protocol == NDPI_PROTOCOL_FACEBOOK)
-                nf->detected_protocol.app_protocol = NDPI_PROTOCOL_MESSENGER;
-            else if (nf->detected_protocol.app_protocol == NDPI_PROTOCOL_GOOGLE)
+            if (nf->detected_protocol.app_protocol == NDPI_PROTOCOL_GOOGLE)
                 nf->detected_protocol.app_protocol = NDPI_PROTOCOL_HANGOUT;
         }
 
