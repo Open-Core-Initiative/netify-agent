@@ -49,6 +49,8 @@
 #include <locale.h>
 #include <syslog.h>
 #include <fcntl.h>
+#include <pthread.h>
+#include <resolv.h>
 
 #include <arpa/inet.h>
 #include <arpa/nameser.h>
@@ -60,10 +62,9 @@
 #include <netinet/tcp.h>
 #undef __FAVOR_BSD
 
+#include <daq.h>
+
 #include <curl/curl.h>
-#include <pcap/pcap.h>
-#include <pthread.h>
-#include <resolv.h>
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -481,6 +482,9 @@ static void nd_init(void)
     }
 
     nd_ifaddrs_update(nd_interface_addrs);
+
+    // Initialize libdaq
+    // TODO:
 }
 
 static void nd_destroy(void)
@@ -1585,11 +1589,11 @@ static void nd_dump_stats(void)
         i->second->Lock();
 
         pkt_totals += *stats[i->first];
-
+#if 0
         struct pcap_stat lpc_stat;
         i->second->GetCaptureStats(lpc_stat);
-
-        nd_json_add_stats(js, stats[i->first], &lpc_stat);
+#endif
+        nd_json_add_stats(js, stats[i->first]/*, &lpc_stat*/);
 
         for (nd_plugins::iterator pi = plugin_stats.begin();
             pi != plugin_stats.end(); pi++) {

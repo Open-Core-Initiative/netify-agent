@@ -34,8 +34,6 @@
 #include <string.h>
 #include <errno.h>
 
-#include <pcap/pcap.h>
-
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
@@ -287,7 +285,7 @@ void nd_json_add_devices(json &parent)
 }
 
 void nd_json_add_stats(json &parent,
-    nd_packet_stats *stats, struct pcap_stat *pcap)
+    nd_packet_stats *stats/*, struct pcap_stat *pcap*/)
 {
     parent["raw"] = stats->pkt.raw;
     parent["ethernet"] = stats->pkt.eth;
@@ -307,16 +305,17 @@ void nd_json_add_stats(json &parent,
     parent["igmp"] = stats->pkt.igmp;
     parent["ip_bytes"] = stats->pkt.ip_bytes;
     parent["wire_bytes"] = stats->pkt.wire_bytes;
-
+#if 0
     parent["pcap_recv"] = pcap->ps_recv - stats->pcap_last.ps_recv;
     parent["pcap_drop"] = pcap->ps_drop - stats->pcap_last.ps_drop;
     parent["pcap_ifdrop"] = pcap->ps_ifdrop - stats->pcap_last.ps_ifdrop;
-
+#endif
     parent["queue_dropped"] = stats->pkt.queue_dropped;
-
+#if 0
     stats->pcap_last.ps_recv = pcap->ps_recv;
     stats->pcap_last.ps_drop = pcap->ps_drop;
     stats->pcap_last.ps_ifdrop = pcap->ps_ifdrop;
+#endif
 }
 
 void ndJsonStatus::Parse(const string &json_string)

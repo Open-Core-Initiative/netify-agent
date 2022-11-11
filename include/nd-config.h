@@ -35,7 +35,7 @@ enum nd_global_flags {
     ndGF_DEBUG_WITH_ETHERS = 0x4,
     ndGF_DEBUG_NDPI= 0x8,
     ndGF_QUIET = 0x10,
-    ndGF_CAPTURE_UNKNOWN_FLOWS = 0x20,
+    ndGF_FREE_0x20 = 0x20,
     ndGF_PRIVATE_EXTADDR = 0x40,
     ndGF_SSL_USE_TLSv1 = 0x80,
     ndGF_SSL_VERIFY = 0x100,
@@ -63,7 +63,6 @@ enum nd_global_flags {
 #define ND_DEBUG_NDPI (nd_config.flags & ndGF_DEBUG_NDPI)
 #define ND_QUIET (nd_config.flags & ndGF_QUIET)
 #define ND_OVERRIDE_LEGACY_CONFIG (nd_config.flags & ndGF_OVERRIDE_LEGACY_CONFIG)
-#define ND_CAPTURE_UNKNOWN_FLOWS (nd_config.flags & ndGF_CAPTURE_UNKNOWN_FLOWS)
 #define ND_PRIVATE_EXTADDR (nd_config.flags & ndGF_PRIVATE_EXTADDR)
 #define ND_SSL_USE_TLSv1 (nd_config.flags & ndGF_SSL_USE_TLSv1)
 #define ND_SSL_VERIFY (nd_config.flags & ndGF_SSL_VERIFY)

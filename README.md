@@ -34,8 +34,9 @@ sub-modules.
 
 ### Build Requirements
 Netify requires the following third-party packages:
+- libdaq
+- libpcap (when required)
 - libcurl
-- libpcap
 - zlib
 - [Linux] libmnl
 - [Linux] libnetfilter-conntrack

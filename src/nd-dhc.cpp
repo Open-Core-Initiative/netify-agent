@@ -46,8 +46,6 @@
 
 #include <net/if.h>
 
-#include <pcap/pcap.h>
-
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 

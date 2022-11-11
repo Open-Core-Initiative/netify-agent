@@ -53,8 +53,6 @@
 #define __FAVOR_BSD 1
 #include <netinet/ip.h>
 
-#include <pcap/pcap.h>
-
 #include <curl/curl.h>
 
 #include <nlohmann/json.hpp>

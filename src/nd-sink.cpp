@@ -45,8 +45,6 @@
 
 #include <curl/curl.h>
 
-#include <pcap/pcap.h>
-
 #include <zlib.h>
 
 #include <nlohmann/json.hpp>

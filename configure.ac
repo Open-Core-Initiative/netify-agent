@@ -47,8 +47,6 @@ AX_CXX_COMPILE_STDCXX_11([ext], [optional])
 AS_IF([test "$HAVE_CXX11" = "0"], [AX_CXX_COMPILE_STDCXX_0X])
 
 # Checks for libraries.
-AC_CHECK_LIB([pcap],
-    [pcap_open_live], [], [AC_MSG_ERROR([libpcap/pcap_open_live() not found.])])
 AC_CHECK_LIB([pthread],
     [pthread_create], [], [AC_MSG_ERROR([libpthread/pthread_create() not found.])])
 AC_CHECK_LIB([rt],
@@ -60,6 +58,13 @@ case "${host_os}" in
             [ns_initparse], [], [AC_MSG_ERROR([libresolv/ns_initparse() not found.])])
         ;;
 esac
+
+PKG_CHECK_MODULES([LIBDAQ], [libdaq], [], [
+    AC_CHECK_HEADERS([daq.h], [], AC_MSG_ERROR([daq header(s) not found.]))
+    AC_CHECK_LIB([daq],
+        [daq_set_verbosity], [],
+        [AC_MSG_ERROR([libdaq/daq_set_verbosity() not found.])])
+])
 
 PKG_CHECK_MODULES([LIBCURL], [libcurl])
 PKG_CHECK_MODULES([ZLIB], [zlib])
@@ -332,7 +337,6 @@ AC_CHECK_HEADERS([netinet/in.h netinet/ip.h netinet/tcp.h netinet/udp.h], [], AC
 
 # Check for optional header files.
 AC_CHECK_HEADERS([endian.h pthread_np.h sys/cpuset.h sys/endian.h linux/ppp_defs.h net/ppp_defs.h stdalign.h])
-AC_CHECK_HEADERS([pcap/sll.h pcap/vlan.h])
 
 # Check for optional parameters
 

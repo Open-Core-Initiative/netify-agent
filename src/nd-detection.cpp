@@ -55,18 +55,6 @@
 #include <resolv.h>
 #include <ctype.h>
 
-#include <pcap/pcap.h>
-#ifdef HAVE_PCAP_SLL_H
-#include <pcap/sll.h>
-#else
-#include "pcap-compat/sll.h"
-#endif
-#ifdef HAVE_PCAP_VLAN_H
-#include <pcap/vlan.h>
-#else
-#include "pcap-compat/vlan.h"
-#endif
-
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 

@@ -43,13 +43,6 @@
 // Extra protocol info text
 #define ND_FLOW_EXTRA_INFO      16
 
-// Capture filename template
-#define ND_FLOW_CAPTURE_TEMPLATE    ND_VOLATILE_STATEDIR "/nd-flow-XXXXXXXX.cap"
-#define ND_FLOW_CAPTURE_SUB_OFFSET  (sizeof(ND_FLOW_CAPTURE_TEMPLATE) - 8 - 4 - 1)
-
-typedef pair<const struct pcap_pkthdr *, const uint8_t *> nd_flow_push;
-typedef vector<nd_flow_push> nd_flow_capture;
-
 typedef unordered_map<string, string> nd_flow_kvmap;
 
 class ndFlow
@@ -220,9 +213,6 @@ public:
 
     int direction;
 
-    nd_flow_capture capture;
-    char capture_filename[sizeof(ND_FLOW_CAPTURE_TEMPLATE)];
-
     // Start of conditional members.  These must be at the end or else access
     // from plugins compiled without various options will have incorrect
     // addresses
@@ -282,10 +272,6 @@ public:
 
     void hash(const string &device, bool hash_mdata = false,
         const uint8_t *key = NULL, size_t key_length = 0);
-
-    void push(const struct pcap_pkthdr *pkt_header, const uint8_t *pkt_data);
-
-    int dump(pcap_t *pcap, const uint8_t *digest);
 
     void reset(void);
 

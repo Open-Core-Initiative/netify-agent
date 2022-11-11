@@ -67,13 +67,13 @@
 #define ND_TTL_IDLE_FLOW        30      // Purge idle flows older than this (30s)
 #define ND_TTL_IDLE_TCP_FLOW    300     // Purge idle TCP flows older than this (5m)
 #define ND_TTL_IDLE_DHC_ENTRY  (60 * 30)// Purge TTL for idle DNS cache entries.
-#define ND_TTL_PCAP_SELECT_USEC 500     // Minimum pcap select timeout in micros.
 #define ND_HASH_BUCKETS_FLOWS   1613    // Initial flows map bucket count.
 #define ND_HASH_BUCKETS_DNSARS  1613    // DNS cache address record hash buckets.
 
 #define ND_MAX_FHC_ENTRIES      10000   // Maximum number of flow hash cache entries.
 #define ND_FHC_PURGE_DIVISOR    10      // Divisor of FHC_ENTRIES to delete on purge.
 
+#define ND_MAX_PKT_LEN          65535   // Maximum packet length to caputre.
 #define ND_MAX_PKT_QUEUE_KB     8192    // Maximum packet queue size in kB
 #define ND_PKTQ_FLUSH_DIVISOR   10      // Divisor of PKT_QUEUE_KB packets to flush.
 
@@ -114,9 +114,6 @@
 #define ND_JSON_FILE_STATUS     ND_VOLATILE_STATEDIR "/status.json"
 #define ND_JSON_DATA_CHUNKSIZ   4096
 #define ND_JSON_INDENT          4
-
-#define ND_PCAP_SNAPLEN         65535   // Capture snap length
-#define ND_PCAP_READ_TIMEOUT    500     // Milliseconds
 
 #ifndef ND_URL_SINK
 #define ND_URL_SINK             "https://sink.netify.ai/provision/"
@@ -259,7 +256,7 @@ typedef struct nd_packet_stats_t
         uint64_t dropped;
     } flow;
 
-    struct pcap_stat pcap_last;
+    //struct pcap_stat pcap_last;
 
     inline nd_packet_stats_t& operator+=(const nd_packet_stats_t &rhs) {
         pkt.raw += rhs.pkt.raw;
@@ -286,9 +283,9 @@ typedef struct nd_packet_stats_t
         pkt.wire_bytes += rhs.pkt.wire_bytes;
         pkt.discard_bytes += rhs.pkt.discard_bytes;
         pkt.queue_dropped += rhs.pkt.queue_dropped;
-        pcap_last.ps_recv += rhs.pcap_last.ps_recv;
-        pcap_last.ps_drop += rhs.pcap_last.ps_drop;
-        pcap_last.ps_ifdrop += rhs.pcap_last.ps_ifdrop;
+        //pcap_last.ps_recv += rhs.pcap_last.ps_recv;
+        //pcap_last.ps_drop += rhs.pcap_last.ps_drop;
+        //pcap_last.ps_ifdrop += rhs.pcap_last.ps_ifdrop;
         return *this;
     }
 

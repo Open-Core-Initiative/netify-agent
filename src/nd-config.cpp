@@ -61,7 +61,6 @@
 #undef __FAVOR_BSD
 
 #include <curl/curl.h>
-#include <pcap/pcap.h>
 #include <pthread.h>
 #include <resolv.h>
 
@@ -148,7 +147,7 @@ ndGlobalConfig::ndGlobalConfig() :
     ca_socket(-1),
     max_backlog(ND_MAX_BACKLOG_KB * 1024),
     max_packet_queue(ND_MAX_PKT_QUEUE_KB * 1024),
-    max_capture_length(ND_PCAP_SNAPLEN),
+    max_capture_length(ND_MAX_PKT_LEN),
     flags(0),
     digest_app_config{0},
     digest_legacy_config{0},
@@ -276,7 +275,7 @@ int ndGlobalConfig::Load(const string &filename)
         reader.GetBoolean("netifyd", "ssl_use_tlsv1", false));
 
     this->max_capture_length = (uint16_t)reader.GetInteger(
-        "netifyd", "max_capture_length", ND_PCAP_SNAPLEN);
+        "netifyd", "max_capture_length", ND_MAX_PKT_LEN);
 
     // TODO: Deprecated:
     // max_tcp_pkts, max_udp_pkts

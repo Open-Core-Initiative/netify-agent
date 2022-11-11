@@ -69,8 +69,6 @@
 #define UNIX_PATH_MAX 104
 #endif
 
-#include <pcap/pcap.h>
-
 #ifdef _ND_USE_CONNTRACK
 #include <libnetfilter_conntrack/libnetfilter_conntrack.h>
 #endif

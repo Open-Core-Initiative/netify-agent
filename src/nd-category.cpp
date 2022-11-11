@@ -51,8 +51,6 @@
 #include <netinet/tcp.h>
 #undef __FAVOR_BSD
 
-#include <pcap/pcap.h>
-
 #include <curl/curl.h>
 
 #include <nlohmann/json.hpp>

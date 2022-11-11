@@ -70,6 +70,16 @@
 #error Unable to find a usable ppp_defs include
 #endif
 
+#define SLL_ADDRLEN 8
+
+struct sll_header {
+    uint16_t sll_pkttype;
+    uint16_t sll_hatype;
+    uint16_t sll_halen;
+    uint8_t sll_addr[SLL_ADDRLEN];
+    uint16_t sll_protocol;
+};
+
 #define __FAVOR_BSD 1
 #include <netinet/in.h>
 #include <netinet/ip.h>
@@ -121,17 +131,8 @@
 #include <resolv.h>
 #include <ctype.h>
 
-#include <pcap/pcap.h>
-#ifdef HAVE_PCAP_SLL_H
-#include <pcap/sll.h>
-#else
-#include "pcap-compat/sll.h"
-#endif
-#ifdef HAVE_PCAP_VLAN_H
-#include <pcap/vlan.h>
-#else
-#include "pcap-compat/vlan.h"
-#endif
+#include <daq.h>
+#include "daq-compat/daq_dlt.h"
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -365,7 +366,6 @@ ndCaptureThread::ndCaptureThread(
     uint8_t private_addr)
     : ndThread(iface->second, (long)cpu, true),
     iface(iface), thread_socket(thread_socket),
-    capture_unknown_flows(ND_CAPTURE_UNKNOWN_FLOWS),
     pcap(NULL), pcap_fd(-1), pcap_datalink_type(0),
     pkt_header(NULL), pkt_data(NULL),
     tv_epoch(0), ts_pkt_first(0), ts_pkt_last(0),
@@ -1514,8 +1514,6 @@ nd_process_ip:
             throw ndCaptureThreadException("CPU thread ID not found!");
         }
     }
-
-    if (capture_unknown_flows) nf->push(pkt_header, pkt_data);
 }
 
 bool ndCaptureThread::ProcessDNSPacket(const char **host, const uint8_t *pkt, uint32_t length)

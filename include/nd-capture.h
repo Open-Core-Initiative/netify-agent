@@ -63,15 +63,15 @@ public:
     virtual ~ndCaptureThread();
 
     virtual void *Entry(void);
-
+#if 0
     // XXX: Not thread-safe!  Lock before calling...
     int GetCaptureStats(struct pcap_stat &stats);
-
+#endif
 protected:
     nd_interface::iterator iface;
     uint8_t dev_mac[ETH_ALEN];
     ndSocketThread *thread_socket;
-    bool capture_unknown_flows;
+#if 0
     pcap_t *pcap;
     int pcap_fd;
     string pcap_file;
@@ -79,8 +79,10 @@ protected:
     char pcap_errbuf[PCAP_ERRBUF_SIZE];
     int pcap_snaplen;
     int pcap_datalink_type;
+
     struct pcap_pkthdr *pkt_header;
     const uint8_t *pkt_data;
+#endif
     time_t tv_epoch;
     uint64_t ts_pkt_first;
     uint64_t ts_pkt_last;

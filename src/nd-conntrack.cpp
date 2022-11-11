@@ -51,8 +51,6 @@
 #include <netinet/tcp.h>
 #undef __FAVOR_BSD
 
-#include <pcap/pcap.h>
-
 #include <libmnl/libmnl.h>
 #include <libnetfilter_conntrack/libnetfilter_conntrack.h>
 
