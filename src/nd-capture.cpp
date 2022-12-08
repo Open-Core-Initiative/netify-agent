@@ -1429,55 +1429,27 @@ nd_process_ip:
     if (dhc != NULL && pkt != NULL && pkt_len > sizeof(struct nd_dns_header_t)) {
         uint16_t lport = ntohs(nf->lower_port), uport = ntohs(nf->upper_port);
 
-        if (lport == 53 || uport == 53 || lport == 5355 || uport == 5355) {
+        uint16_t lport = ntohs(nf->lower_port),
+            uport = ntohs(nf->upper_port);
+        uint16_t proto = ND_PROTO_UNKNOWN;
 
-            const char *host = NULL;
-            bool is_query = ProcessDNSPacket(&host, pkt, pkt_len);
-#if 0
-            if (is_query) {
-                // Rehash M/DNS flows:
-                // This is done to uniquely track queries that originate from
-                // the same local port.  Some devices re-use their local port
-                // which would cause additional queries to not be processed.
-                // Rehashing using the host_server_name as an additional key
-                // guarantees that we see all DNS queries/responses.
+        // DNS, MDNS, or LLMNR?
+        if (lport == 53 || uport == 53) proto = ND_PROTO_DNS;
+        else if (lport == 5353 || uport == 5353) proto = ND_PROTO_MDNS;
+        else if (lport == 5355 || uport == 5355) proto = ND_PROTO_LLMNR;
 
-//                if (ndpi_proto == NDPI_PROTOCOL_DNS) {
-                    nf->hash(tag, false,
-                        (const uint8_t *)host,
-                        strnlen(host, ND_MAX_HOSTNAME));
-//                }
-//                else {
-//                    nf->hash(tag, false,
-//                        (const uint8_t *)nf->mdns.answer,
-//                        strnlen(nf->mdns.answer, ND_FLOW_MDNS_ANSLEN));
-//                }
+        if (proto != ND_PROTO_UNKNOWN) {
 
-                if (memcmp(nf->digest_mdata, nf->digest_lower, SHA1_DIGEST_LENGTH)) {
-                    flows->erase(fi.first);
+            bool is_query = ProcessDNSPacket(nf, pkt,
+                pkt_len - (packet->length - packet->caplen), proto
+            );
 
-                    memcpy(nf->digest_mdata, nf->digest_lower,
-                        SHA1_DIGEST_LENGTH);
-                    flow_digest.assign((const char *)nf->digest_lower,
-                        SHA1_DIGEST_LENGTH);
-
-                    fi = flows->insert(nd_flow_pair(flow_digest, nf));
-
-                if (! fi.second) {
-                    // Flow exists...  update stats and return.
-                    *fi.first->second += *nf;
-
-                    nd_dprintf("%s: delete rehashed DNS flow: %lu packets, detection complete: %s\n",
-                        tag.c_str(), nf->total_packets, (nf->flags.detection_complete.load()) ? "yes" : "no");
-                    delete nf;
-
-                    return;
-                }
-            }
-#else
             if (is_query && nf->flags.detection_complete.load()) {
-                nf->flags.dhc_hit = false;
+                nf->flags.detection_init = false;
                 nf->flags.detection_complete = false;
+                nf->flags.detection_updated = false;
+                nf->flags.detection_expiring = false;
+                nf->flags.detection_expired = false;
                 nf->lower_bytes = flow.lower_bytes;
                 nf->upper_bytes = flow.upper_bytes;
                 nf->lower_packets = flow.lower_packets;
@@ -1485,7 +1457,6 @@ nd_process_ip:
                 nf->total_packets = flow.total_packets;
                 nf->detection_packets = 0;
             }
-#endif
         }
     }
 
@@ -1518,12 +1489,11 @@ nd_process_ip:
     if (capture_unknown_flows) nf->push(pkt_header, pkt_data);
 }
 
-bool ndCaptureThread::ProcessDNSPacket(const char **host, const uint8_t *pkt, uint32_t length)
+bool ndCaptureThread::ProcessDNSPacket(ndFlow *flow, const uint8_t *pkt, uint16_t pkt_len, uint16_t proto)
 {
     ns_rr rr;
-    int rc = ns_initparse(pkt, length, &ns_h);
-
-    *host = NULL;
+    const char *host = NULL;
+    int rc = ns_initparse(pkt, pkt_len, &ns_h);
 
     if (rc < 0) {
 #ifdef _ND_LOG_DHC
@@ -1560,30 +1530,39 @@ bool ndCaptureThread::ProcessDNSPacket(const char **host, const uint8_t *pkt, ui
             continue;
         }
 
-#ifdef _ND_LOG_DHC
         if (ns_rr_type(rr) != ns_t_a && ns_rr_type(rr) != ns_t_aaaa) {
+#ifdef _ND_LOG_DHC
             nd_dprintf("%s: Skipping QD RR type: %d\n",
                 tag.c_str(), ns_rr_type(rr));
+#endif
             continue;
         }
-#endif
+
 #ifdef _ND_LOG_DHC
         nd_dprintf("%s: QD RR type: %d, name: %s\n",
             tag.c_str(), ns_rr_type(rr), ns_rr_name(rr));
 #endif
-        *host = ns_rr_name(rr);
+        host = ns_rr_name(rr);
         break;
     }
 
     // Is query?
-    if (*host != NULL && ns_msg_getflag(ns_h, ns_f_qr) == 0)
+    if (host != NULL && ns_msg_getflag(ns_h, ns_f_qr) == 0) {
+#ifdef _ND_LOG_DHC
+        nd_dprintf("%s: DNS query, returning...\n", tag.c_str());
+#endif
         return true;
+    }
 
-    // If host wasn't found or this isn't a response, return.
-    if (*host == NULL || ns_msg_getflag(ns_h, ns_f_qr) != 1)
+    // If this isn't a response, return.
+    if (ns_msg_getflag(ns_h, ns_f_qr) != 1) {
+#ifdef _ND_LOG_DHC
+        nd_dprintf("%s: NOT a DNS response, returning...\n", tag.c_str());
+#endif
         return false;
+    }
 
-    // Add responses to DHC...
+    // Process responses records...
     for (uint16_t i = 0; i < ns_msg_count(ns_h, ns_s_an); i++) {
         if (ns_parserr(&ns_h, ns_s_an, i, &rr)) {
 #ifdef _ND_LOG_DHC
@@ -1596,13 +1575,68 @@ bool ndCaptureThread::ProcessDNSPacket(const char **host, const uint8_t *pkt, ui
 #ifdef _ND_LOG_DHC
         nd_dprintf("%s: AN RR type: %d\n", tag.c_str(), ns_rr_type(rr));
 #endif
+        if (ns_rr_type(rr) == ns_t_ptr) {
+            if (proto != ND_PROTO_MDNS) {
+#ifdef _ND_LOG_DHC
+                nd_dprintf("%s: Ignoring PTR, not mDNS...\n", tag.c_str());
+#endif
+                continue;
+            }
+
+            if (flow->has_mdns_domain_name() != false) {
+#ifdef _ND_LOG_DHC
+                nd_dprintf("%s: mDNS domain name already set...\n", tag.c_str());
+#endif
+                continue;
+            }
+
+            const uint8_t *p = (const uint8_t *)ns_rr_rdata(rr);
+
+            unsigned i = 0;
+            while (*p != 0 && p < (const uint8_t *)(pkt + pkt_len)
+                && i < ND_FLOW_HOSTNAME - 1) {
+                if ((*p & 0xc0) == 0xc0) {
+                    uint16_t offset = (*(p + 1)) + ((*p & 0x3f) << 8);
+                    p = (const uint8_t *)(pkt + offset);
+                }
+
+                uint8_t len = *p; p++;
+                if (i != 0) flow->mdns.domain_name[i++] = '.';
+                for (uint8_t j = 0; j < len
+                    && i < ND_FLOW_HOSTNAME - 1
+                    && p < (const uint8_t *)(pkt + pkt_len);
+                    p++, i++, j++) {
+                    flow->mdns.domain_name[i] = *p;
+                }
+            }
+
+            if (flow->mdns.domain_name[0] != '\0') {
+                nd_set_hostname(
+                    flow->mdns.domain_name,
+                    flow->mdns.domain_name, ND_FLOW_HOSTNAME
+                );
+            }
+#ifdef _ND_LOG_DHC
+            if (flow->has_mdns_domain_name() == false) continue;
+            nd_dprintf("%s: parsing mDNS PTR RR: ttl: %d, data len: %d: %s\n",
+                tag.c_str(), ns_rr_ttl(rr), ns_rr_rdlen(rr), flow->mdns.domain_name
+            );
+#endif
+            continue;
+        }
+
         if (ns_rr_type(rr) != ns_t_a && ns_rr_type(rr) != ns_t_aaaa)
             continue;
 
+        if (proto != ND_PROTO_DNS || host == NULL)
+            continue;
+
+        // Add responses to DHC...
         dhc->insert(
             (ns_rr_type(rr) == ns_t_a) ? AF_INET : AF_INET6,
-            ns_rr_rdata(rr), *host
+            ns_rr_rdata(rr), host
         );
+
 #ifdef _ND_LOG_DHC
         char addr[INET6_ADDRSTRLEN];
         struct in_addr addr4;
@@ -1619,7 +1653,7 @@ bool ndCaptureThread::ProcessDNSPacket(const char **host, const uint8_t *pkt, ui
 
         nd_dprintf(
             "%s: dns RR %s address: %s, ttl: %u, rlen: %hu: %s\n",
-            tag.c_str(), *host,
+            tag.c_str(), host,
             (ns_rr_type(rr) == ns_t_a) ? "A" : "AAAA",
             ns_rr_ttl(rr), ns_rr_rdlen(rr), addr);
 #endif // _ND_LOG_DHC

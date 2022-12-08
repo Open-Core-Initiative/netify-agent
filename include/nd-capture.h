@@ -102,7 +102,8 @@ protected:
 
     void ProcessPacket(void);
 
-    bool ProcessDNSPacket(const char **host, const uint8_t *pkt, uint32_t length);
+    bool ProcessDNSPacket(ndFlow *flow,
+        const uint8_t *pkt, uint16_t pkt_len, uint16_t proto);
 };
 
 typedef map<string, ndCaptureThread *> nd_capture_threads;

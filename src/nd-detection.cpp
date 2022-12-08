@@ -864,7 +864,7 @@ void ndDetectionThread::ProcessPacket(ndDetectionQueueEntry *entry)
 
             if (ndEF->ssl.server_cn[0] == '\0' &&
                 ndEFNFP.tls_quic.serverCN != NULL) {
-                CopyHostname(
+                nd_set_hostname(
                     ndEF->ssl.server_cn,
                     ndEFNFP.tls_quic.serverCN,
                     ND_FLOW_TLS_CNLEN
@@ -932,15 +932,29 @@ void ndDetectionThread::ProcessPacket(ndDetectionQueueEntry *entry)
             }
         break;
         case ND_PROTO_DNS:
-        case ND_PROTO_MDNS:
-        case ND_PROTO_LLMNR:
             //nd_dprintf("DNS flow updated.\n");
+            break;
+        case ND_PROTO_MDNS:
+            if (ndEF->has_mdns_domain_name()) {
+                flow_update = true;
+                ndEF->flags.detection_updated = true;
+            }
+            //nd_dprintf("mDNS flow updated: %s, %s, %s\n",
+            //    ndEF->host_server_name, ndEFNF->host_server_name, ndEF->mdns.domain_name);
+            break;
+        case ND_PROTO_LLMNR:
+            //nd_dprintf("LLMNR flow updated.\n");
             break;
         default:
             break;
         }
     }
-
+#if 0
+    if (ndEF->detected_protocol == ND_PROTO_MDNS) {
+        nd_dprintf("mDNS flow updated: packets: %lu, check extra packets: %s.\n",
+            ndEF->detection_packets.load(), (check_extra_packets) ? "yes" : "no");
+    }
+#endif
     // Flow detection complete.
     if (ndEF->flags.detection_init.load() && ! check_extra_packets)
         ndEF->flags.detection_complete = true;
