@@ -788,7 +788,7 @@ void ndCaptureThread::ProcessPacket(void)
 
     while (true) {
         if (type == ETHERTYPE_VLAN) {
-            if (l2_len + 4 > pkt_header->caplen) {
+            if (l2_len + 4 > (uint16_t)pkt_header->caplen) {
                 stats->pkt.discard++;
                 stats->pkt.discard_bytes += pkt_header->len;
 #ifdef _ND_LOG_PKT_DISCARD
@@ -841,7 +841,7 @@ void ndCaptureThread::ProcessPacket(void)
             stats->pkt.pppoe++;
             type = ETHERTYPE_IP;
 
-            if (l2_len + 6 > pkt_header->caplen) {
+            if (l2_len + 6 > (uint16_t)pkt_header->caplen) {
                 stats->pkt.discard++;
                 stats->pkt.discard_bytes += pkt_header->len;
 #ifdef _ND_LOG_PKT_DISCARD
@@ -1043,7 +1043,7 @@ nd_process_ip:
         return;
     }
 
-    if (l2_len + l3_len + l4_len > pkt_header->caplen) {
+    if (l2_len + l3_len + l4_len > (uint16_t)pkt_header->caplen) {
         stats->pkt.discard++;
         stats->pkt.discard_bytes += pkt_header->len;
 #ifdef _ND_LOG_PKT_DISCARD
@@ -1427,11 +1427,9 @@ nd_process_ip:
     }
 
     if (dhc != NULL && pkt != NULL && pkt_len > sizeof(struct nd_dns_header_t)) {
-        uint16_t lport = ntohs(nf->lower_port), uport = ntohs(nf->upper_port);
 
-        uint16_t lport = ntohs(nf->lower_port),
-            uport = ntohs(nf->upper_port);
         uint16_t proto = ND_PROTO_UNKNOWN;
+        uint16_t lport = ntohs(nf->lower_port), uport = ntohs(nf->upper_port);
 
         // DNS, MDNS, or LLMNR?
         if (lport == 53 || uport == 53) proto = ND_PROTO_DNS;
@@ -1441,7 +1439,7 @@ nd_process_ip:
         if (proto != ND_PROTO_UNKNOWN) {
 
             bool is_query = ProcessDNSPacket(nf, pkt,
-                pkt_len - (packet->length - packet->caplen), proto
+                pkt_len - (pkt_header->len - pkt_header->caplen), proto
             );
 
             if (is_query && nf->flags.detection_complete.load()) {

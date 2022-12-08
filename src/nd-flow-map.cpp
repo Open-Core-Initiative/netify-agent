@@ -92,7 +92,7 @@ ndFlowMap::ndFlowMap(size_t buckets)
 ndFlowMap::~ndFlowMap()
 {
     for (size_t i = 0; i < buckets; i++) {
-        int rc = pthread_mutex_lock(bucket_lock[i]);
+        pthread_mutex_lock(bucket_lock[i]);
         for (auto it = bucket[i]->begin(); it != bucket[i]->end(); it++) delete it->second;
         delete bucket[i];
         pthread_mutex_unlock(bucket_lock[i]);

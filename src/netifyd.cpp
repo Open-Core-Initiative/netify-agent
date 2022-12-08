@@ -468,8 +468,6 @@ static void nd_init(void)
             );
         }
         else {
-            int rc;
-
             nd_devices[(*i).second] = make_pair(
                 new mutex, new nd_device_addrs
             );
@@ -664,7 +662,7 @@ static void nd_stop_detection_threads(void)
 
     detection_threads.clear();
 }
-
+#if 0
 static int nd_reload_detection_threads(void)
 {
     for (nd_detection_threads::iterator i = detection_threads.begin();
@@ -676,7 +674,7 @@ static int nd_reload_detection_threads(void)
 
     return 0;
 }
-
+#endif // UNUSED
 #ifdef _ND_USE_PLUGINS
 
 static int nd_plugin_start_services(void)
@@ -1727,8 +1725,6 @@ enum ndDumpFlags {
 
 static void nd_dump_protocols(uint8_t type = ndDUMP_TYPE_ALL)
 {
-    struct ndpi_detection_module_struct *ndpi;
-
     if (! (type & ndDUMP_TYPE_PROTOS) && ! (type & ndDUMP_TYPE_APPS) &&
         ! (type & ndDUMP_TYPE_CATS) && ! (type & ndDUMP_TYPE_RISKS)) {
         printf("No filter type specified (application, protocol).\n");
