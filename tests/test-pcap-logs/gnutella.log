@@ -1,4 +1,4 @@
-lo: [i6------] ICMPv6.netify.google :::0 --> ff02::1:ffa4:e108:0
+lo: [i6------] ICMPv6 :::0 --> ff02::1:ffa4:e108:0
 lo: [i6------] ICMPv6 fe80::c50d:519f:96a4:e108:0 --> ff02::2:0
 lo: [i6------] ICMPv6 fe80::c50d:519f:96a4:e108:0 --> ff02::16:0
 lo: [i6------] ICMPv6 fe80::c50d:519f:96a4:e108:0 --> ff02::1:0
