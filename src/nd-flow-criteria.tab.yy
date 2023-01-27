@@ -761,9 +761,7 @@ expr_category:
             )
         );
 
-        if (_NDFP_result)
-            _NDFP_debugf("App category == %s? %s\n", $3, (_NDFP_result) ? "yes" : "no");
-        else {
+        if (! _NDFP_result) {
             _NDFP_result = (
                 $$ = (
                     nd_categories->LookupTag(
@@ -771,6 +769,8 @@ expr_category:
                 )
             );
         }
+
+        _NDFP_debugf("App/domain category == %s? %s\n", $3, (_NDFP_result) ? "yes" : "no");
     }
     | FLOW_CATEGORY CMP_NOTEQUAL VALUE_NAME {
         size_t p;
@@ -786,9 +786,7 @@ expr_category:
             )
         );
 
-        if (_NDFP_result)
-            _NDFP_debugf("App category != %s? %s\n", $3, (_NDFP_result) ? "yes" : "no");
-        else {
+        if (! _NDFP_result) {
             _NDFP_result = (
                 $$ = (
                     nd_categories->LookupTag(
@@ -796,6 +794,8 @@ expr_category:
                 )
             );
         }
+
+        _NDFP_debugf("App/domain category != %s? %s\n", $3, (_NDFP_result) ? "yes" : "no");
     }
     ;
 
