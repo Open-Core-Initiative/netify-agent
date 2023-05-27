@@ -933,17 +933,6 @@ const nd_ndpi_disabled_protos_t nd_ndpi_disabled_protos = {
 typedef vector<uint16_t> nd_ndpi_free_protos_t;
 
 const nd_ndpi_free_protos_t nd_ndpi_free_protos = {
-    NDPI_PROTOCOL_FREE_22,
-    NDPI_PROTOCOL_FREE_25,
-    NDPI_PROTOCOL_FREE_33,
-    NDPI_PROTOCOL_FREE_34,
-    NDPI_PROTOCOL_FREE_56,
-    NDPI_PROTOCOL_FREE_57,
-    NDPI_PROTOCOL_FREE_62,
-    NDPI_PROTOCOL_FREE_98,
-    NDPI_PROTOCOL_FREE_99,
-    NDPI_PROTOCOL_FREE_107,
-    NDPI_PROTOCOL_FREE_108,
 };
 
 typedef unordered_map<uint16_t, vector<pair<uint16_t, nd_proto_id_t>>> nd_ndpi_portmap_t;
