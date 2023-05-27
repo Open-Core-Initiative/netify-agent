@@ -329,6 +329,7 @@ bool ndFlow::HasHttpUserAgent(void) const
 bool ndFlow::HasHttpURL(void) const
 {
     return (
+        GetMasterProtocol() == ND_PROTO_HTTP &&
         http.url[0] != '\0'
     );
 }
@@ -500,7 +501,7 @@ void ndFlow::Print(uint8_t pflags) const
         dls << " ";
     }
 
-    dls << setfill(' ') << dec << "["
+    dls << setfill(' ') << dec
         << ((iface.role == ndIR_LAN) ? 'i' : 'e')
         << ((ip_version == 4) ? '4' : (ip_version == 6) ? '6' : '-')
         << (flags.detection_init.load() ? 'p' : '-')
@@ -519,7 +520,49 @@ void ndFlow::Print(uint8_t pflags) const
             (privacy_mask & PRIVATE_UPPER) ? 'V' :
             (privacy_mask & (PRIVATE_LOWER | PRIVATE_UPPER)) ? '?' :
             '-')
-        << "] ";
+        << " ";
+
+    switch (lower_map) {
+    case LOWER_UNKNOWN:
+        dls << "[U";
+        break;
+    case LOWER_LOCAL:
+        dls << "[L";
+        break;
+    case LOWER_OTHER:
+        dls << "[O";
+        break;
+    }
+
+    char ot = '?';
+    switch (other_type) {
+    case OTHER_UNKNOWN:
+        ot = 'U';
+        break;
+    case OTHER_UNSUPPORTED:
+        ot = 'X';
+        break;
+    case OTHER_LOCAL:
+        ot = 'L';
+        break;
+    case OTHER_MULTICAST:
+        ot = 'M';
+        break;
+    case OTHER_BROADCAST:
+        ot = 'B';
+        break;
+    case OTHER_REMOTE:
+        ot = 'R';
+        break;
+    case OTHER_ERROR:
+        ot = 'E';
+        break;
+    }
+
+    if (lower_map == LOWER_OTHER)
+        dls << ot;
+
+    dls << "] ";
 
     if ((pflags & PRINTF_MACS))
         dls << lower_mac.GetString() << " ";
@@ -532,6 +575,23 @@ void ndFlow::Print(uint8_t pflags) const
         << ((origin == ORIGIN_UPPER || origin == ORIGIN_UNKNOWN) ?
             '-' : '>')
         << " ";
+
+    switch (lower_map) {
+    case LOWER_UNKNOWN:
+        dls << "[U";
+        break;
+    case LOWER_LOCAL:
+        dls << "[O";
+        break;
+    case LOWER_OTHER:
+        dls << "[L";
+        break;
+    }
+
+    if (lower_map == LOWER_LOCAL)
+        dls << ot;
+
+    dls << "] ";
 
     if ((pflags & PRINTF_MACS))
         dls << upper_mac.GetString() << " ";
@@ -558,6 +618,37 @@ void ndFlow::Print(uint8_t pflags) const
                 dls << " H: " << host_server_name;
         }
 
+        if (HasMDNSDomainName()) {
+            dls << endl << setw(iface.ifname.size()) << " " << ":";
+            dls << " MDNS/DN: " << mdns.domain_name;
+        }
+
+        if (HasDhcpFingerprint() || HasDhcpClassIdent()) {
+            dls << endl << setw(iface.ifname.size()) << " " << ":";
+            if (HasDhcpFingerprint())
+                dls << " DHCP/FP: " << dhcp.fingerprint;
+            if (HasDhcpClassIdent())
+                dls << " DHCP/CI: " << dhcp.class_ident;
+        }
+
+        if (HasHttpUserAgent()) {
+            dls << endl << setw(iface.ifname.size()) << " " << ":";
+            dls << " HTTP/UA: " << http.user_agent;
+        }
+
+        if (HasHttpURL()) {
+            dls << endl << setw(iface.ifname.size()) << " " << ":";
+            dls << " URL: " << http.url;
+        }
+
+        if (HasSSHClientAgent() || HasSSHServerAgent()) {
+            dls << endl << setw(iface.ifname.size()) << " " << ":";
+            if (HasSSHClientAgent())
+                dls << " SSH/CA: " << ssh.client_agent;
+            if (HasSSHServerAgent())
+                dls << " SSH/CA: " << ssh.server_agent;
+        }
+
         if (HasTLSClientSNI() || HasTLSServerCN()) {
             dls << endl << setw(iface.ifname.size()) << " " << ":";
             if (HasTLSClientSNI())
@@ -579,7 +670,9 @@ void ndFlow::Print(uint8_t pflags) const
         multiline = true;
 
         dls << endl << setw(iface.ifname.size()) << " " << ": "
-            << "DP: " << (int)stats.detection_packets.load();
+            << "DP: " << (int)stats.detection_packets.load() << " "
+            << "TP: " << (int)stats.total_packets.load() << " "
+            << "TB: " << (int)stats.total_bytes.load();
     }
 
     if (multiline) dls << endl;
