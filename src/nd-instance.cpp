@@ -620,7 +620,7 @@ uint32_t ndInstance::InitializeConfig(int argc, char * const argv[])
             fprintf(stderr,
                 "Sorry, this feature was disabled (embedded).\n"
             );
-            return ndCR_OPTION_DISABLED;
+            return ndCR_DISABLED_OPTION;
 #endif
         case 's':
             rc = DisplayAgentStatus();
